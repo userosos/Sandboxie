@@ -1,0 +1,6 @@
+NAME: Scientist
+DATE: 01.01.2999
+TYPE: PERSONAL-HUGE
+SOFTWARE: Sandboxie-Plus
+UPDATEKEY: anykey
+SIGNATURE: unlimitedtime
