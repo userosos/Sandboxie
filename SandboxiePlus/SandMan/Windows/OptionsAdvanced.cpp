@@ -21,25 +21,29 @@ void COptionsWindow::CreateAdvanced()
 	connect(ui.txtSingleMemory, SIGNAL(textChanged(const QString&)), this, SLOT(OnAdvancedChanged()));
 	connect(ui.txtTotalMemory, SIGNAL(textChanged(const QString&)), this, SLOT(OnAdvancedChanged()));
 	connect(ui.txtTotalNumber, SIGNAL(textChanged(const QString&)), this, SLOT(OnAdvancedChanged()));
+	connect(ui.txtCpuRateLimit, SIGNAL(textChanged(const QString&)), this, SLOT(OnAdvancedChanged()));
 
 	connect(ui.chkUseSbieDeskHack, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
 	connect(ui.chkUseSbieWndStation, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
+
+	connect(ui.chkUseElectronDetection, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
 
 	connect(ui.chkAddToJob, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
 	connect(ui.chkProtectSCM, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
 	connect(ui.chkRestrictServices, SIGNAL(clicked(bool)), this, SLOT(OnSysSvcChanged()));
 	connect(ui.chkElevateRpcss, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
-	connect(ui.chkProtectSystem, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
+	//connect(ui.chkProtectSystem, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
 	connect(ui.chkDropPrivileges, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
 	connect(ui.chkDropConHostIntegrity, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
 
 	//Do not force untrusted integrity level on the sanboxed token (reduces desktop isolation)
-	//connect(ui.chkNotUntrusted, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
+	connect(ui.chkNotUntrusted, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
 
 	connect(ui.chkOpenCOM, SIGNAL(clicked(bool)), this, SLOT(OnOpenCOM()));
 	connect(ui.chkComTimeout, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
 
 	connect(ui.chkForceRestart, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
+	connect(ui.chkRestartOnPCA, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
 
 	connect(ui.chkNoSecurityIsolation, SIGNAL(clicked(bool)), this, SLOT(OnIsolationChanged()));
 	connect(ui.chkNoSecurityFiltering, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
@@ -134,6 +138,7 @@ void COptionsWindow::CreateAdvanced()
 	connect(ui.btnDelHostProcess, SIGNAL(clicked(bool)), this, SLOT(OnDelHostProcess()));
 	connect(ui.chkShowHostProcTmpl, SIGNAL(clicked(bool)), this, SLOT(OnShowHostProcTmpl()));
 	connect(ui.chkConfidential, SIGNAL(clicked(bool)), this, SLOT(OnConfidentialChanged()));
+	connect(ui.chkProtectAdminOnly, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
 	connect(ui.chkLessConfidential, SIGNAL(clicked(bool)), this, SLOT(OnLessConfidentialChanged()));
 	connect(ui.chkProtectWindow, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
 	connect(ui.chkAdminOnly, SIGNAL(clicked(bool)), this, SLOT(OnAdvancedChanged()));
@@ -157,10 +162,12 @@ void COptionsWindow::CreateAdvanced()
 	connect(ui.chkCfgNoExpand, SIGNAL(clicked(bool)), this, SLOT(OnDumpConfig()));
 
 
-	CPanelWidgetEx* pCfgDump = new CPanelWidgetEx(ui.tabAdvanced);
+	QTreeWidget* pOldCfgDumpTree = ui.treeCfgDump;
+	CPanelWidgetEx* pCfgDump = new CPanelWidgetEx();
 	pCfgDump->GetTree()->setHeaderLabels(tr("Name|Type|Value").split("|"));
-	ui.treeCfgDump->parentWidget()->layout()->replaceWidget(ui.treeCfgDump, pCfgDump);
-	ui.treeCfgDump->deleteLater();
+	pOldCfgDumpTree->parentWidget()->layout()->replaceWidget(pOldCfgDumpTree, pCfgDump);
+	pOldCfgDumpTree->hide();
+	pOldCfgDumpTree->deleteLater();
 	ui.treeCfgDump = pCfgDump->GetTree();
 
 	ui.tabsDebug->setCurrentIndex(0);
@@ -190,20 +197,25 @@ void COptionsWindow::LoadAdvanced()
 	if (iTotalNumber > 0x0LL && iTotalNumber <= 0xFFFFFFFFLL)
 		ui.txtTotalNumber->setText(QString::number(iTotalNumber));
 
+	qint64 iCpuRateLimit = m_pBox->GetNum64("CpuRateLimit", 0);
+	if (iCpuRateLimit > 0x0LL && iCpuRateLimit <= 100LL)
+		ui.txtCpuRateLimit->setText(QString::number(iCpuRateLimit));
+
 	ui.chkUseSbieDeskHack->setChecked(m_pBox->GetBool("UseSbieDeskHack", true));
 	ui.chkUseSbieWndStation->setChecked(m_pBox->GetBool("UseSbieWndStation", true));
+
+	ui.chkUseElectronDetection->setChecked(m_pBox->GetBool("UseElectronDetection", true));
 
 	ui.chkProtectSCM->setChecked(!m_pBox->GetBool("UnrestrictedSCM", false));
 	ui.chkRestrictServices->setChecked(!m_pBox->GetBool("RunServicesAsSystem", false));
 	ui.chkElevateRpcss->setChecked(m_pBox->GetBool("RunRpcssAsSystem", false));
-	ui.chkProtectSystem->setChecked(!m_pBox->GetBool("ExposeBoxedSystem", false));
+	//ui.chkProtectSystem->setChecked(!m_pBox->GetBool("ExposeBoxedSystem", false));
 	ui.chkDropPrivileges->setChecked(m_pBox->GetBool("StripSystemPrivileges", true));
 	ui.chkDropConHostIntegrity->setChecked(m_pBox->GetBool("DropConHostIntegrity", false));
 
 
-	//ui.chkNotUntrusted->setChecked(m_pBox->GetBool("NoUntrustedToken", false));
-
 	ui.chkForceRestart->setChecked(m_pBox->GetBool("ForceRestartAll", false));
+	ui.chkRestartOnPCA->setChecked(!m_pBox->GetBool("NoRestartOnPCA", false));
 
 	CheckOpenCOM();
 	ui.chkComTimeout->setChecked(!m_pBox->GetBool("RpcMgmtSetComTimeout", true));
@@ -274,9 +286,11 @@ void COptionsWindow::LoadAdvanced()
 	}
 
 	
-	ui.chkHostProtect->setChecked(m_pBox->GetBool("ProtectHostImages", false));
+	bool bGlobalHostProtect = m_pBox->GetAPI()->GetGlobalSettings()->GetBool("ProtectHostImages", false);
+	ui.chkHostProtect->setChecked(m_pBox->GetBool("ProtectHostImages", bGlobalHostProtect));
 	ui.chkHostProtectMsg->setEnabled(ui.chkHostProtect->isChecked());
-	ui.chkHostProtectMsg->setChecked(m_pBox->GetBool("NotifyImageLoadDenied", true));
+	bool bGlobalHostProtectMsg = m_pBox->GetAPI()->GetGlobalSettings()->GetBool("NotifyImageLoadDenied", true);
+	ui.chkHostProtectMsg->setChecked(m_pBox->GetBool("NotifyImageLoadDenied", bGlobalHostProtectMsg));
 
 	LoadOptionList();
 
@@ -354,6 +368,7 @@ void COptionsWindow::LoadAdvanced()
 	ShowHostProcTmpl();
 
 	ui.chkConfidential->setChecked(m_pBox->GetBool("ConfidentialBox", false));
+	ui.chkProtectAdminOnly->setChecked(m_pBox->GetBool("ProtectAdminOnly", true));
 	ui.chkLessConfidential->setEnabled(ui.chkConfidential->isChecked());
 	ui.chkLessConfidential->setChecked(m_BoxTemplates.contains("LessConfidentialBox"));
 	ui.chkNotifyProtect->setChecked(m_pBox->GetBool("NotifyBoxProtected", false));
@@ -435,6 +450,8 @@ void COptionsWindow::SaveAdvanced()
 	WriteAdvancedCheck(ui.chkUseSbieDeskHack, "UseSbieDeskHack", "", "n");
 	WriteAdvancedCheck(ui.chkUseSbieWndStation, "UseSbieWndStation", "", "n");
 
+	WriteAdvancedCheck(ui.chkUseElectronDetection, "UseElectronDetection", "", "n");
+
 	WriteAdvancedCheck(ui.chkAddToJob, "NoAddProcessToJob", "", "y");
 	WriteAdvancedCheck(ui.chkProtectSCM, "UnrestrictedSCM", "", "y");
 	WriteAdvancedCheck(ui.chkNestedJobs, "AllowBoxedJobs", "y", "");
@@ -457,17 +474,23 @@ void COptionsWindow::SaveAdvanced()
 	else
 		m_pBox->DelValue("ProcessNumberLimit");
 
+	qint64 iCpuRateLimit = !ui.txtCpuRateLimit->text().isEmpty() ? ui.txtCpuRateLimit->text().toLongLong() : -1;
+	if (iCpuRateLimit > 0x0LL && iCpuRateLimit <= 100LL)
+		WriteText("CpuRateLimit", QString::number(iCpuRateLimit));
+	else
+		m_pBox->DelValue("CpuRateLimit");
+
 	WriteAdvancedCheck(ui.chkRestrictServices, "RunServicesAsSystem", "", "y");
 	WriteAdvancedCheck(ui.chkElevateRpcss, "RunRpcssAsSystem", "y", "");
-	WriteAdvancedCheck(ui.chkProtectSystem, "ExposeBoxedSystem", "", "y");
+	//WriteAdvancedCheck(ui.chkProtectSystem, "ExposeBoxedSystem", "", "y");
 	WriteAdvancedCheck(ui.chkDropPrivileges, "StripSystemPrivileges", "", "n");
 	WriteAdvancedCheck(ui.chkDropConHostIntegrity, "DropConHostIntegrity", "y", "");
 
-	//WriteAdvancedCheck(ui.chkNotUntrusted, "NoUntrustedToken", "y", "");
 
 	WriteAdvancedCheck(ui.chkComTimeout, "RpcMgmtSetComTimeout", "n", "");
 
 	WriteAdvancedCheck(ui.chkForceRestart, "ForceRestartAll", "y", "");
+	WriteAdvancedCheck(ui.chkRestartOnPCA, "NoRestartOnPCA", "", "y");
 
 	WriteAdvancedCheck(ui.chkNoSecurityIsolation, "NoSecurityIsolation", "y", "");
 	WriteAdvancedCheck(ui.chkNoSecurityFiltering, "NoSecurityFiltering", "y", "");
@@ -522,13 +545,15 @@ void COptionsWindow::SaveAdvanced()
 	m_pBox->UpdateTextList("InjectDllARM64", InjectDllARM64, false);
 #endif
 
-	WriteAdvancedCheck(ui.chkHostProtect, "ProtectHostImages", "y", "");
-	WriteAdvancedCheck(ui.chkHostProtectMsg, "NotifyImageLoadDenied", "", "n");
+	bool bGlobalHostProtect = m_pBox->GetAPI()->GetGlobalSettings()->GetBool("ProtectHostImages", false);
+	WriteAdvancedCheck(ui.chkHostProtect, "ProtectHostImages", bGlobalHostProtect ? "" : "y", bGlobalHostProtect ? "n" : "");
+	bool bGlobalHostProtectMsg = m_pBox->GetAPI()->GetGlobalSettings()->GetBool("NotifyImageLoadDenied", true);
+	WriteAdvancedCheck(ui.chkHostProtectMsg, "NotifyImageLoadDenied", bGlobalHostProtectMsg ? "" : "y", bGlobalHostProtectMsg ? "n" : "");
 
 	bool bGlobalSbieLogon = m_pBox->GetAPI()->GetGlobalSettings()->GetBool("SandboxieLogon", false);
 	WriteAdvancedCheck(ui.chkSbieLogon, "SandboxieLogon", bGlobalSbieLogon ? "" : "y", bGlobalSbieLogon ? "n" : "");
 
-	bool bGlobalSandboxGroup = m_pBox->GetAPI()->GetGlobalSettings()->GetBool("SandboxieAllGroup", false);
+	bool bGlobalSandboxGroup = m_pBox->GetAPI()->GetGlobalSettings()->GetBool("SandboxieAllGroup", true);
 	bool bGlobalCreateToken = m_pBox->GetAPI()->GetGlobalSettings()->GetBool("UseCreateToken", false);
 	if (ui.chkCreateToken->checkState() == Qt::Checked) {
 		WriteAdvancedCheck(ui.chkCreateToken, "SandboxieAllGroup", bGlobalSandboxGroup ? "" : "y");
@@ -542,6 +567,7 @@ void COptionsWindow::SaveAdvanced()
 		WriteAdvancedCheck(ui.chkCreateToken, "SandboxieAllGroup", bGlobalSandboxGroup ? "" : "y", bGlobalSandboxGroup ? "n" : "");
 		WriteAdvancedCheck(ui.chkCreateToken, "UseCreateToken", bGlobalCreateToken ? "" : "y", bGlobalCreateToken ? "n" : "");
 	}
+	WriteAdvancedCheck(ui.chkNotUntrusted, "NoUntrustedToken", "y", "");
 
 	SaveOptionList();
 
@@ -654,6 +680,7 @@ void COptionsWindow::SaveAdvanced()
 	WriteTextList("DenyHostAccess", DenyHostProcesses);
 
 	WriteAdvancedCheck(ui.chkConfidential, "ConfidentialBox", "y", "");
+	WriteAdvancedCheck(ui.chkProtectAdminOnly, "ProtectAdminOnly", "", "n");
 	WriteAdvancedCheck(ui.chkNotifyProtect, "NotifyBoxProtected", "y", "");
 
 	WriteAdvancedCheck(ui.chkProtectWindow, "CoverBoxedWindows", "y", "");
@@ -732,13 +759,14 @@ void COptionsWindow::UpdateBoxIsolation()
 	else {
 		ReadGlobalCheck(ui.chkSbieLogon, "SandboxieLogon", false);
 
-		if (m_pBox->GetBool("SandboxieAllGroup", false, true))
+		if (m_pBox->GetBool("SandboxieAllGroup", true, true))
 			ui.chkCreateToken->setCheckState(Qt::Checked);
-		else if (m_pBox->GetBool("UseCreateToken", false, true))
+		else if (!m_pBox->GetBool("SandboxieAllGroup", true, true) && m_pBox->GetBool("UseCreateToken", false, true))
 			ui.chkCreateToken->setCheckState(Qt::PartiallyChecked);
 		else
 			ui.chkCreateToken->setCheckState(Qt::Unchecked);
 	}
+	ui.chkNotUntrusted->setChecked(m_pBox->GetBool("NoUntrustedToken", false));
 }
 
 void COptionsWindow::OnSysSvcChanged()
@@ -800,6 +828,18 @@ void COptionsWindow::UpdateJobOptions()
 		ui.lblTotalNumber->setText("");
 	}
 	ui.txtTotalNumber->setEnabled(bUseJobObject);
+
+	qint64 iCpuRateLimit = ui.txtCpuRateLimit->text().toLongLong();
+	if (!(iCpuRateLimit > 0x0LL && iCpuRateLimit <= 100LL)) {
+		ui.lblCpuRateLimit->setText(tr("unlimited"));
+	}
+	else {
+		ui.lblCpuRateLimit->setText(tr("%"));
+	}
+	ui.txtCpuRateLimit->setEnabled(bUseJobObject);
+
+
+	ui.chkRestartOnPCA->setEnabled(!ui.chkForceRestart->isChecked());
 }
 
 void COptionsWindow::CheckOpenCOM()
@@ -938,6 +978,8 @@ void COptionsWindow::SaveOptionList()
 void COptionsWindow::AddOptionEntry(const QString& Name, QString Program, const QString& Value, const QString& Template)
 {
 	QTreeWidgetItem* pItem = new QTreeWidgetItem();
+	if (!Template.isEmpty())
+		pItem->setData(0, COptionsWindow::PendingItemTemplateRole, true);
 
 	pItem->setText(0, Name + (Template.isEmpty() ? "" : " (" + Template + ")"));
 	pItem->setData(0, Qt::UserRole, !Template.isEmpty() ? "" : Name);
@@ -974,12 +1016,13 @@ void COptionsWindow::OnAddOption()
 
 	progDialog.setValue("EnableMiniDump");
 
-	if (!progDialog.exec())
+	if (theGUI->SafeExec(&progDialog) != QDialog::Accepted)
 		return;
 
 	QString Name = progDialog.value(); 
 
 	AddOptionEntry(Name, "", "");
+	OnAdvancedChanged();
 }
 
 void COptionsWindow::OnDelOption()

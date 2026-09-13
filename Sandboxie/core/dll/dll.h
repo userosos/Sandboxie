@@ -208,6 +208,21 @@ typedef struct _THREAD_DATA {
     ULONG           sh32_shell_execute;
 
     //
+    // shell module: notification trace de-duplication
+    //
+
+    BOOLEAN         sh32_notify_trace_active;
+    BOOLEAN         sh32_notify_trace_valid;
+    BOOLEAN         sh32_notify_trace_proxy;
+    BOOLEAN         sh32_notify_trace_guid_valid;
+    ULONG           sh32_notify_trace_message;
+    ULONG           sh32_notify_trace_cb_size;
+    ULONG           sh32_notify_trace_flags;
+    ULONG           sh32_notify_trace_hwnd;
+    ULONG           sh32_notify_trace_uid;
+    GUID            sh32_notify_trace_guid;
+
+    //
     // gui module
     //
 
@@ -302,7 +317,7 @@ extern BOOLEAN Dll_AppContainerToken;
 extern BOOLEAN Dll_ChromeSandbox;
 extern BOOLEAN Dll_FirstProcessInBox;
 extern BOOLEAN Dll_CompartmentMode;
-//extern BOOLEAN Dll_AlernateIpcNaming;
+extern BOOLEAN Dll_AlternateIpcNaming;
 
 extern ULONG Dll_ImageType;
 
@@ -516,7 +531,7 @@ NTSTATUS Key_NtDeleteKeyTreeImpl(HANDLE KeyHandle, BOOLEAN DeleteTree);
 
 NTSTATUS Key_MarkDeletedAndClose(HANDLE KeyHandle);
 
-void Key_DiscardMergeByPath(const WCHAR *TruePath, BOOLEAN Recurse);
+void Key_UpdateMergeByPath(const WCHAR *TruePath, BOOLEAN Removed, BOOLEAN Added);
 
 void Key_NtClose(HANDLE KeyHandle, void* CloseParams);
 
